@@ -7,6 +7,7 @@
 - **ハイブリッド検索**: 全文検索・ベクトル検索・グラフ検索の統合
 - **自然言語質問応答**: ChatGPTを活用したRAGシステム
 - **引用元表示**: 回答の根拠となる法律条文の明示
+- **e-Gov準拠**: 公式XMLスキーマ v3に完全対応
 - **コスト重視**: 効率的なリソース使用
 - **段階的開発**: MVPから段階的に機能拡張
 
@@ -16,6 +17,7 @@
 - **データベース**: ArangoDB (全文検索・ベクトル検索・グラフ検索)
 - **AI**: OpenAI GPT-4, jinaai/jina-embeddings-v3
 - **RAG**: langchain, langgraph
+- **データ形式**: e-Gov XMLスキーマ v3準拠
 - **フロントエンド**: 未定 (React/Vue.js/Next.js候補)
 - **インフラ**: Docker, Docker Compose
 - **開発**: uv, GitHub Actions, TDD
@@ -134,6 +136,17 @@ uv run pytest tests/unit/test_search.py
 - [MVP要件定義](MVP_REQUIREMENTS.md)
 - [開発ガイドライン](DEVELOPMENT_GUIDE.md)
 - [開発プロセス](PROCESS_SPEC.md)
+- [API仕様書](API_SPEC.md)
+
+## e-Gov XMLスキーマ対応
+
+本システムは、e-Govの公式XMLスキーマ v3に完全対応しています：
+
+- **スキーマ参照**: [XMLSchemaForJapaneseLaw_v3.xsd](https://laws.e-gov.go.jp/file/XMLSchemaForJapaneseLaw_v3.xsd)
+- **ルート要素**: `<Law>`（法令基本情報を属性として持つ）
+- **本則部分**: `<MainProvision>`要素内の条文解析
+- **条文構造**: `<Article>`、`<ArticleNum>`、`<ArticleCaption>`
+- **名前空間**: `http://elaws.e-gov.go.jp/XMLSchema`
 
 ## ライセンス
 

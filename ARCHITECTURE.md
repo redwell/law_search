@@ -27,15 +27,21 @@
 - **目的**: e-GovからXMLデータを取得
 - **実装**: Pythonスクリプトによる自動ダウンロード
 - **スケジュール**: 定期的なバッチ実行（月1回）
-- **データ形式**: XML（XSDスキーマ定義あり）
+- **データ形式**: XML（e-Gov XMLスキーマ v3準拠）
+- **スキーマ参照**: [XMLSchemaForJapaneseLaw_v3.xsd](https://laws.e-gov.go.jp/file/XMLSchemaForJapaneseLaw_v3.xsd)
 
 #### 1.2 データ前処理モジュール
 - **目的**: XMLデータの解析・正規化・構造化
 - **機能**:
-  - XMLパースとスキーマ検証
+  - XMLパースとスキーマ検証（e-Gov XMLスキーマ v3対応）
   - テキストの正規化・クリーニング
   - 法律間の参照関係の抽出
   - 埋め込み生成用のテキスト分割
+- **スキーマ対応**:
+  - ルート要素: `<Law>`（法令基本情報を属性として持つ）
+  - 本則部分: `<MainProvision>`要素内の条文解析
+  - 条文構造: `<Article>`、`<ArticleNum>`、`<ArticleCaption>`
+  - 名前空間: `http://elaws.e-gov.go.jp/XMLSchema`
 
 #### 1.3 埋め込み生成モジュール
 - **目的**: 法律条文のベクトル表現を生成

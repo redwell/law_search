@@ -8,6 +8,7 @@
 - **Git**: 最新版
 - **Docker**: 最新版
 - **uv**: 最新版
+- **e-Gov XMLスキーマ**: v3準拠（[XMLSchemaForJapaneseLaw_v3.xsd](https://laws.e-gov.go.jp/file/XMLSchemaForJapaneseLaw_v3.xsd)）
 
 ### 2. プロジェクト初期化
 
@@ -117,7 +118,13 @@ law_search/
 - **docstring**: 全ての関数・クラスにdocstringを記述
 - **命名規則**: スネークケース（関数・変数）、パスカルケース（クラス）
 
-#### 1.2 コード例
+#### 1.2 e-Gov XMLスキーマ対応
+- **スキーマ準拠**: e-Gov XMLスキーマ v3に完全準拠
+- **名前空間**: `http://elaws.e-gov.go.jp/XMLSchema`を使用
+- **要素構造**: `<Law>`、`<MainProvision>`、`<Article>`等の正しい構造
+- **属性抽出**: 法令基本情報は属性から優先的に抽出
+
+#### 1.3 コード例
 ```python
 from typing import List, Dict, Optional
 from dataclasses import dataclass
@@ -213,7 +220,28 @@ class TestSearchEngine:
 
 ### 3. ドキュメント規約
 
-#### 3.1 docstring形式
+#### 3.1 e-Gov XMLスキーマ対応の実装例
+```python
+def parse_law_xml(self, xml_file_path: str) -> Optional[LawDocument]:
+    """
+    e-Gov XMLスキーマ v3準拠の法律XMLファイルをパース
+    
+    Args:
+        xml_file_path: XMLファイルのパス
+        
+    Returns:
+        パースされた法律文書オブジェクト
+        
+    Note:
+        - ルート要素: <Law>（法令基本情報を属性として持つ）
+        - 本則部分: <MainProvision>要素内の条文解析
+        - 条文構造: <Article>、<ArticleNum>、<ArticleCaption>
+        - 名前空間: http://elaws.e-gov.go.jp/XMLSchema
+    """
+    pass
+```
+
+#### 3.2 docstring形式
 ```python
 def process_xml_data(xml_file: str, output_dir: str) -> Dict[str, int]:
     """

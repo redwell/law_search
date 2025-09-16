@@ -1,0 +1,60 @@
+# 開発環境設定
+
+# データベース設定
+database:
+  url: "arangodb://root:password@localhost:8529"
+  name: "law_search"
+  timeout: 30
+
+# OpenAI設定
+openai:
+  model: "gpt-4"
+  max_tokens: 2000
+  temperature: 0.7
+  timeout: 30
+
+# 埋め込みモデル設定
+embedding:
+  model: "jinaai/jina-embeddings-v3"
+  dimension: 1024
+  batch_size: 32
+  timeout: 60
+
+# アプリケーション設定
+app:
+  debug: true
+  log_level: "DEBUG"
+  host: "0.0.0.0"
+  port: 8000
+  workers: 1
+
+# 検索設定
+search:
+  limit: 10
+  timeout: 30
+  weights:
+    fulltext: 0.4
+    vector: 0.4
+    graph: 0.2
+
+# e-Gov設定
+egov:
+  base_url: "https://elaws.e-gov.go.jp"
+  data_dir: "./data/egov"
+  update_interval: 86400  # 24時間（秒）
+  timeout: 60
+
+# セキュリティ設定
+security:
+  cors_origins:
+    - "http://localhost:3000"
+    - "http://localhost:8000"
+  rate_limit_per_minute: 60
+  max_query_length: 500
+
+# 監視設定
+monitoring:
+  enable_metrics: true
+  metrics_port: 9090
+  log_requests: true
+  log_responses: true

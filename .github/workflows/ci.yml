@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.11, 3.12]
+
+    services:
+      arangodb:
+        image: arangodb:3.11
+        env:
+          ARANGO_ROOT_PASSWORD: password
+        ports:
+          - 8529:8529
+        options: >-
+          --health-cmd "curl -f http://localhost:8529/_api/version"
+          --health-interval 30s
+          --health-timeout 10s
+          --health-retries 3
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v2
+      with:
+        version: "latest"
+
+    - name: Install dependencies
+      run: |
+        uv sync --dev
+
+    - name: Lint with ruff
+      run: |
+        uv run ruff check src/ tests/
+
+    - name: Format check with black
+      run: |
+        uv run black --check src/ tests/
+
+    - name: Type check with mypy
+      run: |
+        uv run mypy src/
+
+    - name: Security check with bandit
+      run: |
+        uv run bandit -r src/
+
+    - name: Test with pytest
+      run: |
+        uv run pytest --cov=src --cov-report=xml
+      env:
+        DATABASE_URL: arangodb://root:password@localhost:8529
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false

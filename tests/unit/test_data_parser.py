@@ -15,23 +15,25 @@ class TestXMLParser:
     
     @pytest.fixture
     def temp_xml_file(self):
-        """一時XMLファイルのフィクスチャ"""
+        """一時XMLファイルのフィクスチャ（e-Gov XMLスキーマ v3対応）"""
         xml_content = '''<?xml version="1.0" encoding="UTF-8"?>
-<law xmlns="http://elaws.e-gov.go.jp/XMLSchema">
-    <LawTitle>所得税法</LawTitle>
-    <LawTitleKana>しょとくぜいほう</LawTitleKana>
-    <LawNum>昭和32年法律第89号</LawNum>
-    <PromulgateDate>1957-03-31</PromulgateDate>
-    <EffectiveDate>1957-04-01</EffectiveDate>
-    <Article>
-        <ArticleNum>第1条</ArticleNum>
-        <ArticleCaption>この法律は、個人の所得に係る税金について定める。</ArticleCaption>
-    </Article>
-    <Article>
-        <ArticleNum>第2条</ArticleNum>
-        <ArticleCaption>所得とは、個人の収入から必要経費を差し引いた金額をいう。</ArticleCaption>
-    </Article>
-</law>'''
+<Law xmlns="http://elaws.e-gov.go.jp/XMLSchema" 
+     LawTitle="所得税法" 
+     LawTitleKana="しょとくぜいほう" 
+     LawNum="昭和32年法律第89号" 
+     PromulgateDate="1957-03-31" 
+     EffectiveDate="1957-04-01">
+    <MainProvision>
+        <Article>
+            <ArticleNum>第1条</ArticleNum>
+            <ArticleCaption>この法律は、個人の所得に係る税金について定める。</ArticleCaption>
+        </Article>
+        <Article>
+            <ArticleNum>第2条</ArticleNum>
+            <ArticleCaption>所得とは、個人の収入から必要経費を差し引いた金額をいう。</ArticleCaption>
+        </Article>
+    </MainProvision>
+</Law>'''
         
         with tempfile.NamedTemporaryFile(mode='w', suffix='.xml', delete=False) as f:
             f.write(xml_content)
@@ -99,36 +101,37 @@ class TestXMLParser:
         assert law_id == "M32HO089"
     
     def test_extract_law_info(self, parser):
-        """法律基本情報抽出テスト"""
-        # テスト用のXML要素を作成（名前空間付き）
-        root = ET.Element("{http://elaws.e-gov.go.jp/XMLSchema}law")
-        title_elem = ET.SubElement(root, "{http://elaws.e-gov.go.jp/XMLSchema}LawTitle")
-        title_elem.text = "所得税法"
-        
-        kana_elem = ET.SubElement(root, "{http://elaws.e-gov.go.jp/XMLSchema}LawTitleKana")
-        kana_elem.text = "しょとくぜいほう"
-        
-        num_elem = ET.SubElement(root, "{http://elaws.e-gov.go.jp/XMLSchema}LawNum")
-        num_elem.text = "昭和32年法律第89号"
+        """法律基本情報抽出テスト（e-Gov XMLスキーマ v3対応）"""
+        # テスト用のXML要素を作成（属性として基本情報を設定）
+        root = ET.Element("{http://elaws.e-gov.go.jp/XMLSchema}Law")
+        root.set("LawTitle", "所得税法")
+        root.set("LawTitleKana", "しょとくぜいほう")
+        root.set("LawNum", "昭和32年法律第89号")
+        root.set("PromulgateDate", "1957-03-31")
+        root.set("EffectiveDate", "1957-04-01")
         
         law_info = parser._extract_law_info(root, "M32HO089")
         
         assert law_info["law_name"] == "所得税法"
         assert law_info["law_name_kana"] == "しょとくぜいほう"
         assert law_info["law_number"] == "昭和32年法律第89号"
+        assert law_info["promulgation_date"] == "1957-03-31"
+        assert law_info["effective_date"] == "1957-04-01"
         assert law_info["category"] == "税法"
     
     def test_extract_articles(self, parser):
-        """条文抽出テスト"""
-        # テスト用のXML要素を作成（名前空間付き）
-        root = ET.Element("{http://elaws.e-gov.go.jp/XMLSchema}law")
-        article1 = ET.SubElement(root, "{http://elaws.e-gov.go.jp/XMLSchema}Article")
+        """条文抽出テスト（e-Gov XMLスキーマ v3対応）"""
+        # テスト用のXML要素を作成（MainProvision要素内に条文を配置）
+        root = ET.Element("{http://elaws.e-gov.go.jp/XMLSchema}Law")
+        main_provision = ET.SubElement(root, "{http://elaws.e-gov.go.jp/XMLSchema}MainProvision")
+        
+        article1 = ET.SubElement(main_provision, "{http://elaws.e-gov.go.jp/XMLSchema}Article")
         num1 = ET.SubElement(article1, "{http://elaws.e-gov.go.jp/XMLSchema}ArticleNum")
         num1.text = "第1条"
         caption1 = ET.SubElement(article1, "{http://elaws.e-gov.go.jp/XMLSchema}ArticleCaption")
         caption1.text = "この法律は、個人の所得に係る税金について定める。"
         
-        article2 = ET.SubElement(root, "{http://elaws.e-gov.go.jp/XMLSchema}Article")
+        article2 = ET.SubElement(main_provision, "{http://elaws.e-gov.go.jp/XMLSchema}Article")
         num2 = ET.SubElement(article2, "{http://elaws.e-gov.go.jp/XMLSchema}ArticleNum")
         num2.text = "第2条"
         caption2 = ET.SubElement(article2, "{http://elaws.e-gov.go.jp/XMLSchema}ArticleCaption")

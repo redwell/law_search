@@ -54,6 +54,10 @@ class XMLParser:
             'law': 'http://elaws.e-gov.go.jp/XMLSchema',
             'xsi': 'http://www.w3.org/2001/XMLSchema-instance'
         }
+        # e-Gov XMLスキーマ v3の主要要素
+        self.root_element = 'Law'
+        self.article_element = 'Article'
+        self.item_element = 'Item'
     
     def parse_law_xml(self, xml_file_path: str) -> Optional[LawDocument]:
         """
@@ -118,7 +122,7 @@ class XMLParser:
     
     def _extract_law_info(self, root: ET.Element, law_id: str) -> Dict[str, Any]:
         """
-        法律基本情報を抽出
+        法律基本情報を抽出（e-Gov XMLスキーマ v3対応）
         
         Args:
             root: XMLルート要素
@@ -130,30 +134,53 @@ class XMLParser:
         law_info = {}
         
         try:
-            # 法律名の抽出
-            law_name_elem = root.find('.//law:LawTitle', self.namespaces)
-            if law_name_elem is not None:
-                law_info["law_name"] = law_name_elem.text.strip()
-            
-            # 法律名（カナ）の抽出
-            law_name_kana_elem = root.find('.//law:LawTitleKana', self.namespaces)
-            if law_name_kana_elem is not None:
-                law_info["law_name_kana"] = law_name_kana_elem.text.strip()
-            
-            # 法律番号の抽出
-            law_number_elem = root.find('.//law:LawNum', self.namespaces)
-            if law_number_elem is not None:
-                law_info["law_number"] = law_number_elem.text.strip()
-            
-            # 公布日の抽出
-            promulgation_date_elem = root.find('.//law:PromulgateDate', self.namespaces)
-            if promulgation_date_elem is not None:
-                law_info["promulgation_date"] = promulgation_date_elem.text.strip()
-            
-            # 施行日の抽出
-            effective_date_elem = root.find('.//law:EffectiveDate', self.namespaces)
-            if effective_date_elem is not None:
-                law_info["effective_date"] = effective_date_elem.text.strip()
+            # ルート要素の属性から基本情報を抽出
+            if root.tag.endswith('Law'):
+                # 法律名の抽出（属性または要素）
+                law_name = root.get('LawTitle') or root.get('lawTitle')
+                if law_name:
+                    law_info["law_name"] = law_name.strip()
+                else:
+                    # 要素から抽出
+                    law_name_elem = root.find('.//law:LawTitle', self.namespaces)
+                    if law_name_elem is not None and law_name_elem.text:
+                        law_info["law_name"] = law_name_elem.text.strip()
+                
+                # 法律名（カナ）の抽出
+                law_name_kana = root.get('LawTitleKana') or root.get('lawTitleKana')
+                if law_name_kana:
+                    law_info["law_name_kana"] = law_name_kana.strip()
+                else:
+                    law_name_kana_elem = root.find('.//law:LawTitleKana', self.namespaces)
+                    if law_name_kana_elem is not None and law_name_kana_elem.text:
+                        law_info["law_name_kana"] = law_name_kana_elem.text.strip()
+                
+                # 法律番号の抽出
+                law_number = root.get('LawNum') or root.get('lawNum')
+                if law_number:
+                    law_info["law_number"] = law_number.strip()
+                else:
+                    law_number_elem = root.find('.//law:LawNum', self.namespaces)
+                    if law_number_elem is not None and law_number_elem.text:
+                        law_info["law_number"] = law_number_elem.text.strip()
+                
+                # 公布日の抽出
+                promulgation_date = root.get('PromulgateDate') or root.get('promulgateDate')
+                if promulgation_date:
+                    law_info["promulgation_date"] = promulgation_date.strip()
+                else:
+                    promulgation_date_elem = root.find('.//law:PromulgateDate', self.namespaces)
+                    if promulgation_date_elem is not None and promulgation_date_elem.text:
+                        law_info["promulgation_date"] = promulgation_date_elem.text.strip()
+                
+                # 施行日の抽出
+                effective_date = root.get('EffectiveDate') or root.get('effectiveDate')
+                if effective_date:
+                    law_info["effective_date"] = effective_date.strip()
+                else:
+                    effective_date_elem = root.find('.//law:EffectiveDate', self.namespaces)
+                    if effective_date_elem is not None and effective_date_elem.text:
+                        law_info["effective_date"] = effective_date_elem.text.strip()
             
             # カテゴリの推定（法律名から）
             law_name = law_info.get("law_name", "")
@@ -180,7 +207,7 @@ class XMLParser:
     
     def _extract_articles(self, root: ET.Element, law_id: str) -> List[Article]:
         """
-        条文を抽出
+        条文を抽出（e-Gov XMLスキーマ v3対応）
         
         Args:
             root: XMLルート要素
@@ -192,21 +219,40 @@ class XMLParser:
         articles = []
         
         try:
-            # 条文要素の検索
-            article_elements = root.findall('.//law:Article', self.namespaces)
-            
-            for article_elem in article_elements:
-                article = self._parse_article_element(article_elem, law_id)
-                if article:
-                    articles.append(article)
-            
-            # 条項要素の検索（Article要素がない場合）
-            if not articles:
-                item_elements = root.findall('.//law:Item', self.namespaces)
-                for item_elem in item_elements:
-                    article = self._parse_item_element(item_elem, law_id)
+            # MainProvision要素内の条文を検索
+            main_provision = root.find('.//law:MainProvision', self.namespaces)
+            if main_provision is not None:
+                # 条文要素の検索
+                article_elements = main_provision.findall('.//law:Article', self.namespaces)
+                
+                for article_elem in article_elements:
+                    article = self._parse_article_element(article_elem, law_id)
                     if article:
                         articles.append(article)
+                
+                # 条項要素の検索（Article要素がない場合）
+                if not articles:
+                    item_elements = main_provision.findall('.//law:Item', self.namespaces)
+                    for item_elem in item_elements:
+                        article = self._parse_item_element(item_elem, law_id)
+                        if article:
+                            articles.append(article)
+            else:
+                # MainProvision要素がない場合、直接検索
+                article_elements = root.findall('.//law:Article', self.namespaces)
+                
+                for article_elem in article_elements:
+                    article = self._parse_article_element(article_elem, law_id)
+                    if article:
+                        articles.append(article)
+                
+                # 条項要素の検索（Article要素がない場合）
+                if not articles:
+                    item_elements = root.findall('.//law:Item', self.namespaces)
+                    for item_elem in item_elements:
+                        article = self._parse_item_element(item_elem, law_id)
+                        if article:
+                            articles.append(article)
             
         except Exception as e:
             logger.warning(f"条文抽出でエラー: {law_id}, {str(e)}")
